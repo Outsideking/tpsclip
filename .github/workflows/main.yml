@@ -1,0 +1,46 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install Expo CLI & EAS CLI
+        run: |
+          npm install -g expo-cli eas-cli
+          npm install
+
+      - name: Login to Expo (optional but recommended)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -n "$EXPO_TOKEN" ]; then
+            eas whoami || eas login --token "$EXPO_TOKEN"
+          else
+            echo "⚠️ Skipping Expo login (no token found)"
+          fi
+
+      - name: Prebuild project
+        run: npx expo prebuild
+
+      - name: Build Android APK
+        run: npx eas build --platform android --profile preview --non-interactive
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tpsclip-apk
+          path: build/**/*.apk
