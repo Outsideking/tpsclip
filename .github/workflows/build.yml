@@ -7,13 +7,29 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
     - uses: actions/checkout@v3
+
     - name: Setup Node
       uses: actions/setup-node@v3
       with:
         node-version: '18'
+
     - name: Install Dependencies
       run: npm install
+
     - name: Build Expo Android
-      run: npx expo prebuild && npx eas build --platform android --profile preview
+      run: |
+        npx expo prebuild
+        npx eas build --platform android --profile preview --non-interactive --output=app-release.apk
+
+    - name: Upload APK to GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: app-release.apk
+        tag_name: "build-${{ github.run_number }}"
+        name: "Android Build #${{ github.run_number }}"
+        body: "✅ Auto-built APK from commit ${{ github.sha }}"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
